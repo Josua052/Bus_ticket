@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
@@ -18,17 +19,24 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Bus Ticket Booking',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(primarySwatch: Colors.blue),
-      initialRoute: splashRoute,
-      routes: {
-        splashRoute: (context) => SplashScreen(),
-        loginRoute: (context) => LoginScreen(),
-        homeRoute: (context) => HomeScreen(),
-        pesanTiketRoute: (context) => PesanTiketScreen(),
-        infoKeberangkatanRoute: (context) => InfoKeberangkatanScreen(),
+    return ScreenUtilInit(
+      designSize: Size(375, 812), // ukuran desain dari Figma (misalnya iPhone X)
+      minTextAdapt: true,
+      splitScreenMode: true,
+      builder: (context, child) {
+        return MaterialApp(
+          title: 'Bus Ticket Booking',
+          debugShowCheckedModeBanner: false,
+          theme: ThemeData(primarySwatch: Colors.blue),
+          initialRoute: splashRoute,
+          routes: {
+            splashRoute: (context) => SplashScreen(),
+            loginRoute: (context) => LoginScreen(),
+            homeRoute: (context) => HomeScreen(),
+            pesanTiketRoute: (context) => PesanTiketScreen(),
+            infoKeberangkatanRoute: (context) => InfoKeberangkatanScreen(),
+          },
+        );
       },
     );
   }

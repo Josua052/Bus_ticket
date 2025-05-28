@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter/gestures.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'dart:ui';
-import 'home_screen.dart';  // Import home_screen.dart
+
+import 'home_screen.dart';
+import 'signup.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -8,21 +13,21 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final TextEditingController usernameController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  bool rememberMe = false;
 
   void _login() {
-    final username = usernameController.text.trim();
+    final email = emailController.text.trim();
     final password = passwordController.text.trim();
 
-    if (username.isEmpty || password.isEmpty) {
+    if (email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Username dan Password wajib diisi')),
+        SnackBar(content: Text('Email dan Password wajib diisi')),
       );
       return;
     }
 
-    // Navigasi ke HomeScreen dan ganti route supaya tidak bisa kembali ke login
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => HomeScreen()),
@@ -32,91 +37,187 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          Image.asset(
-            'assets/images/stasiun.jpg',
-            fit: BoxFit.cover,
-          ),
-          BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-            child: Container(color: Colors.white.withOpacity(0.2)),
-          ),
-          Center(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.symmetric(horizontal: 30),
-              child: Container(
-                padding: EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.35),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.15),
-                      blurRadius: 20,
-                      offset: Offset(0, 10),
-                    ),
-                  ],
-                ),
+      resizeToAvoidBottomInset: false,
+      body: ScreenUtilInit(
+        designSize: Size(375, 812),
+        builder: (context, child) => Stack(
+          fit: StackFit.expand,
+          children: [
+            Transform.scale(
+              scale: 1.2,
+              child: Image.asset(
+                'assets/images/bg_app.jpg',
+                fit: BoxFit.cover,
+                height: double.infinity,
+                width: double.infinity,
+                alignment: Alignment.center,
+              ),
+            ),
+            Container(
+              color: Color.fromRGBO(229, 241, 255, 0.9),
+            ),
+            Center(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.symmetric(horizontal: 30.w),
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Image.asset(
-                      'assets/images/logo_bus.png',
-                      width: 100,
-                      height: 100,
+                      'assets/images/logo_app.png',
+                      width: 150.w,
+                      height: 150.w,
                     ),
-                    SizedBox(height: 24),
-                    TextField(
-                      controller: usernameController,
-                      decoration: InputDecoration(
-                        prefixIcon: Icon(Icons.person),
-                        labelText: 'Username',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        filled: true,
-                        fillColor: Colors.white.withOpacity(0.7),
+                    SizedBox(height: 20.h),
+                    Text(
+                      "Hai Paners",
+                      style: GoogleFonts.poppins(
+                        fontSize: 28.sp,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
                       ),
                     ),
-                    SizedBox(height: 16),
+                    SizedBox(height: 8.h),
+                    Text(
+                      "Silahkan masukkan email dan password kamu untuk masuk",
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(fontSize: 14.sp, color: Colors.black87),
+                    ),
+                    SizedBox(height: 24.h),
+                    TextField(
+                      controller: emailController,
+                      decoration: InputDecoration(
+                        prefixIcon: Icon(Icons.email),
+                        hintText: "Enter Email",
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12.r),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 16.h),
                     TextField(
                       controller: passwordController,
                       obscureText: true,
                       decoration: InputDecoration(
-                        prefixIcon: Icon(Icons.lock),
-                        labelText: 'Password',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                        hintText: "Enter Password",
                         filled: true,
-                        fillColor: Colors.white.withOpacity(0.7),
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12.r),
+                        ),
                       ),
                     ),
-                    SizedBox(height: 24),
+                    SizedBox(height: 12.h),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Checkbox(
+                              value: rememberMe,
+                              onChanged: (value) {
+                                setState(() {
+                                  rememberMe = value ?? false;
+                                });
+                              },
+                            ),
+                            Text("Ingatkan saya", style: GoogleFonts.poppins(fontSize: 13.sp)),
+                          ],
+                        ),
+                        TextButton(
+                          onPressed: () {},
+                          child: Text(
+                            "Lupa Password?",
+                            style: GoogleFonts.poppins(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13.sp,
+                              color: Colors.black,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 16.h),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: _login,
                         style: ElevatedButton.styleFrom(
-                          padding: EdgeInsets.symmetric(vertical: 16),
+                          backgroundColor: Color(0xFFFFD100),
+                          padding: EdgeInsets.symmetric(vertical: 16.h),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(18.r),
                           ),
                         ),
                         child: Text(
-                          'Login',
-                          style: TextStyle(fontSize: 18),
+                          "MASUK",
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16.sp,
+                            color: Colors.black,
+                          ),
                         ),
                       ),
                     ),
+                    SizedBox(height: 16.h),
+                    Text("or log in using", style: GoogleFonts.poppins(color: Colors.blueGrey, fontSize: 13.sp)),
+                    SizedBox(height: 16.h),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        icon: Image.asset('assets/icons/google.png', height: 24.h),
+                        onPressed: () {},
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          elevation: 3,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14.r),
+                          ),
+                          padding: EdgeInsets.symmetric(vertical: 14.h),
+                        ),
+                        label: Text(
+                          "Masuk dengan Google",
+                          style: GoogleFonts.poppins(
+                            color: Colors.black87,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 14.sp,
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 20.h),
+                    Text.rich(
+                      TextSpan(
+                        text: 'Belum memiliki akun? ',
+                        style: GoogleFonts.poppins(fontSize: 14.sp),
+                        children: [
+                          TextSpan(
+                            text: 'Buat Akun',
+                            style: GoogleFonts.poppins(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                              decoration: TextDecoration.underline,
+                            ),
+                            recognizer: TapGestureRecognizer()
+                              ..onTap = () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => SignupScreen()),
+                                );
+                              },
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: 16.h),
                   ],
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
