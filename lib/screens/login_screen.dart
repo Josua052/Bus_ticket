@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'dart:ui';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import 'home_screen.dart';
 import 'signup.dart';
@@ -16,8 +16,9 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   bool rememberMe = false;
+  bool isLoading = false;
 
-  void _login() {
+  void _login() async {
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
 
@@ -28,10 +29,38 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => HomeScreen()),
-    );
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      UserCredential userCredential = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(email: email, password: password);
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => HomeScreen()),
+      );
+    } on FirebaseAuthException catch (e) {
+      String errorMessage = 'Terjadi kesalahan saat login';
+      if (e.code == 'user-not-found') {
+        errorMessage = 'Akun dengan email ini tidak ditemukan.';
+      } else if (e.code == 'wrong-password') {
+        errorMessage = 'Password salah.';
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(errorMessage)),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal login: ${e.toString()}')),
+      );
+    }
+
+    setState(() {
+      isLoading = false;
+    });
   }
 
   @override
@@ -143,7 +172,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: _login,
+                        onPressed: isLoading ? null : _login,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Color(0xFFFFD100),
                           padding: EdgeInsets.symmetric(vertical: 16.h),
@@ -151,14 +180,16 @@ class _LoginScreenState extends State<LoginScreen> {
                             borderRadius: BorderRadius.circular(18.r),
                           ),
                         ),
-                        child: Text(
-                          "MASUK",
-                          style: GoogleFonts.poppins(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16.sp,
-                            color: Colors.black,
-                          ),
-                        ),
+                        child: isLoading
+                            ? CircularProgressIndicator(color: Colors.black)
+                            : Text(
+                                "MASUK",
+                                style: GoogleFonts.poppins(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16.sp,
+                                  color: Colors.black,
+                                ),
+                              ),
                       ),
                     ),
                     SizedBox(height: 16.h),

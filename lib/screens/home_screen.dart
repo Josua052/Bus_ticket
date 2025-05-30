@@ -1,3 +1,5 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -5,6 +7,7 @@ import 'pesan_tiket_screen.dart';
 import 'informasi_jadwal_bus.dart';
 import 'profile.dart';
 import 'pilih_bus.dart';
+
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -14,12 +17,39 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
 
+  String? userName;
   String? selectedFrom;
   String? selectedTo;
   DateTime? selectedDate;
   final TextEditingController searchController = TextEditingController();
 
   final List<String> kota = ['Medan', 'Ranto Parapat', 'Siantar'];
+
+  @override
+  void initState() {
+    super.initState();
+    fetchUserName(); 
+    // Atur navigation bar agar putih
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        systemNavigationBarColor: Colors.white,
+        systemNavigationBarIconBrightness: Brightness.dark,
+      ),
+    );
+  }
+
+  Future<void> fetchUserName() async {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user != null) {
+    final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+    setState(() {
+      userName = doc.data()?['displayName'] ?? 'Pengguna';
+    });
+  }
+}
+
 
   Future<void> _pickDate() async {
     final now = DateTime.now();
@@ -70,12 +100,12 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                               suffixIcon: searchController.text.isNotEmpty
                                   ? IconButton(
-                                icon: Icon(Icons.clear),
-                                onPressed: () {
-                                  searchController.clear();
-                                  setStateModal(() {});
-                                },
-                              )
+                                      icon: Icon(Icons.clear),
+                                      onPressed: () {
+                                        searchController.clear();
+                                        setStateModal(() {});
+                                      },
+                                    )
                                   : null,
                             ),
                           ),
@@ -97,24 +127,22 @@ class _HomeScreenState extends State<HomeScreen> {
                     Expanded(
                       child: ListView(
                         children: kota
-                            .where((city) => city
-                            .toLowerCase()
-                            .contains(searchController.text.toLowerCase()))
+                            .where((city) => city.toLowerCase().contains(searchController.text.toLowerCase()))
                             .map(
                               (city) => ListTile(
-                            title: Text(city),
-                            onTap: () {
-                              setState(() {
-                                if (isFromField) {
-                                  selectedFrom = city;
-                                } else {
-                                  selectedTo = city;
-                                }
-                              });
-                              Navigator.pop(context);
-                            },
-                          ),
-                        )
+                                title: Text(city),
+                                onTap: () {
+                                  setState(() {
+                                    if (isFromField) {
+                                      selectedFrom = city;
+                                    } else {
+                                      selectedTo = city;
+                                    }
+                                  });
+                                  Navigator.pop(context);
+                                },
+                              ),
+                            )
                             .toList(),
                       ),
                     ),
@@ -131,16 +159,21 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light, // status bar ikon putih
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        systemNavigationBarColor: Colors.white,
+        systemNavigationBarIconBrightness: Brightness.dark,
+      ),
       child: Scaffold(
-        extendBodyBehindAppBar: true, // biar body dan appbar melebar ke atas layar
-        backgroundColor: Color(0xFFF5F6FA),
+        extendBodyBehindAppBar: true,
+        backgroundColor: const Color(0xFFF5F6FA),
         body: SafeArea(
-          top: false, // matikan safearea di atas supaya warna header bisa sampai status bar
+          top: false,
           child: LayoutBuilder(
             builder: (context, constraints) {
               return ScreenUtilInit(
-                designSize: Size(375, 812),
+                designSize: const Size(375, 812),
                 builder: (context, child) => SingleChildScrollView(
                   child: ConstrainedBox(
                     constraints: BoxConstraints(minHeight: constraints.maxHeight),
@@ -149,29 +182,28 @@ class _HomeScreenState extends State<HomeScreen> {
                         Container(
                           width: double.infinity,
                           decoration: BoxDecoration(
-                            color: Color(0xFF265AA5),
+                            color: const Color(0xFF265AA5),
                             borderRadius: BorderRadius.only(
                               bottomLeft: Radius.circular(24.r),
                               bottomRight: Radius.circular(24.r),
                             ),
                           ),
-                          // Padding atas ditambah status bar agar tidak tertutup
                           padding: EdgeInsets.fromLTRB(
-                              16.w,
-                              24.h + MediaQuery.of(context).padding.top,
-                              16.w,
-                              24.h),
+                            16.w,
+                            24.h + MediaQuery.of(context).padding.top,
+                            16.w,
+                            24.h,
+                          ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
                                 children: [
-                                  Image.asset('assets/images/logo_app.png',
-                                      width: 40.w, height: 40.w),
+                                  Image.asset('assets/images/logo_app.png', width: 40.w, height: 40.w),
                                   SizedBox(width: 12.w),
                                   Flexible(
                                     child: Text(
-                                      'Halo, Josua Ronaldo',
+                                      'Halo, ${userName ?? '...'}',
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontSize: 16.sp,
@@ -230,7 +262,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                       child: ElevatedButton(
                                         onPressed: () {
                                           if (selectedFrom != null && selectedTo != null && selectedDate != null) {
-                                            final formattedDate = "${selectedDate!.day.toString().padLeft(2, '0')} - ${_monthName(selectedDate!.month)} - ${selectedDate!.year} | ${_dayName(selectedDate!.weekday)}";
+                                            final formattedDate =
+                                                "${selectedDate!.day.toString().padLeft(2, '0')} - ${_monthName(selectedDate!.month)} - ${selectedDate!.year} | ${_dayName(selectedDate!.weekday)}";
                                             Navigator.push(
                                               context,
                                               MaterialPageRoute(
@@ -244,8 +277,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                           }
                                         },
                                         style: ElevatedButton.styleFrom(
-                                          backgroundColor: Color(0xFFFFD100),
-                                          foregroundColor: Color(0xFF265AA5),
+                                          backgroundColor: const Color(0xFFFFD100),
+                                          foregroundColor: const Color(0xFF265AA5),
                                           padding: EdgeInsets.symmetric(vertical: 16.h),
                                           shape: RoundedRectangleBorder(
                                             borderRadius: BorderRadius.circular(20.r),
@@ -315,7 +348,9 @@ class _HomeScreenState extends State<HomeScreen> {
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: _selectedIndex,
           onTap: _onItemTapped,
-          selectedItemColor: Color(0xFF265AA5),
+          backgroundColor: Colors.white, // ✅ warna putih solid
+          elevation: 0, // ✅ tanpa bayangan
+          selectedItemColor: const Color(0xFF265AA5),
           unselectedItemColor: Colors.grey,
           showUnselectedLabels: true,
           type: BottomNavigationBarType.fixed,

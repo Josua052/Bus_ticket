@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SignupScreen extends StatefulWidget {
   @override
@@ -9,20 +11,23 @@ class SignupScreen extends StatefulWidget {
 
 class _SignupScreenState extends State<SignupScreen> {
   final TextEditingController nameController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController confirmPasswordController = TextEditingController();
 
   bool passwordVisible = false;
   bool confirmPasswordVisible = false;
+  bool isLoading = false;
 
-  void _signup() {
+  void _signup() async {
     final name = nameController.text.trim();
+    final email = emailController.text.trim();
     final phone = phoneController.text.trim();
     final pass = passwordController.text.trim();
     final confirm = confirmPasswordController.text.trim();
 
-    if (name.isEmpty || phone.isEmpty || pass.isEmpty || confirm.isEmpty) {
+    if (name.isEmpty || email.isEmpty || phone.isEmpty || pass.isEmpty || confirm.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Semua kolom wajib diisi")),
       );
@@ -36,15 +41,80 @@ class _SignupScreenState extends State<SignupScreen> {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Akun berhasil dibuat!")),
-    );
-    Navigator.pop(context);
+    if (pass.length < 8) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Kata sandi minimal 8 karakter")),
+      );
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      UserCredential userCredential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(email: email, password: pass);
+
+      final uid = userCredential.user!.uid;
+
+      print("Creating user in Firestore...");
+      await FirebaseFirestore.instance.collection('users').doc(uid).set({
+        'uid': uid,
+        'displayName': name, // ganti dari 'name' ke 'displayName'
+        'email': email,
+        'phoneNumber': phone, // ganti dari 'phone' ke 'phoneNumber'
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+print("User created in Firestore.");
+
+
+      showDialog(
+        context: context,
+        barrierDismissible: false, // Supaya user tidak menutup dialog dengan tap di luar
+        builder: (_) => AlertDialog(
+          title: Text('Sukses'),
+          content: Text('Akun berhasil dibuat!'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context, rootNavigator: true).pop(); // Pastikan menutup dialog
+                Future.microtask(() {
+                  Navigator.pushReplacementNamed(context, '/login');
+                });
+              },
+              child: Text('OK'),
+            ),
+          ],
+        ),
+      );
+
+    } on FirebaseAuthException catch (e) {
+      String message = 'Terjadi kesalahan saat mendaftar';
+      if (e.code == 'email-already-in-use') {
+        message = 'Email sudah terdaftar';
+      } else if (e.code == 'weak-password') {
+        message = 'Kata sandi terlalu lemah';
+      }
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    } catch (e) {
+  debugPrint("Error saat signup: $e");
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text("Terjadi kesalahan saat membuat akun. Silakan coba lagi.")),
+  );
+}
+
+
+    setState(() {
+      isLoading = false;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       body: ScreenUtilInit(
         designSize: Size(375, 812),
         builder: (_, child) => Stack(
@@ -56,12 +126,9 @@ class _SignupScreenState extends State<SignupScreen> {
                 fit: BoxFit.cover,
                 height: double.infinity,
                 width: double.infinity,
-                alignment: Alignment.center,
               ),
             ),
-            Container(
-              color: Color.fromRGBO(229, 241, 255, 0.9),
-            ),
+            Container(color: Color.fromRGBO(229, 241, 255, 0.9)),
             Center(
               child: SingleChildScrollView(
                 padding: EdgeInsets.symmetric(horizontal: 30.w),
@@ -82,9 +149,12 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                     ),
                     SizedBox(height: 16.h),
+                    _inputField(controller: nameController, hint: "Nama lengkap"),
+                    SizedBox(height: 12.h),
                     _inputField(
-                      controller: nameController,
-                      hint: "Nama lengkap",
+                      controller: emailController,
+                      hint: "Email",
+                      keyboardType: TextInputType.emailAddress,
                     ),
                     SizedBox(height: 12.h),
                     _inputField(
@@ -97,11 +167,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       controller: passwordController,
                       hint: "Kata Sandi",
                       visible: passwordVisible,
-                      toggle: () {
-                        setState(() {
-                          passwordVisible = !passwordVisible;
-                        });
-                      },
+                      toggle: () => setState(() => passwordVisible = !passwordVisible),
                     ),
                     Align(
                       alignment: Alignment.centerLeft,
@@ -117,17 +183,13 @@ class _SignupScreenState extends State<SignupScreen> {
                       controller: confirmPasswordController,
                       hint: "Konfirmasi kata sandi",
                       visible: confirmPasswordVisible,
-                      toggle: () {
-                        setState(() {
-                          confirmPasswordVisible = !confirmPasswordVisible;
-                        });
-                      },
+                      toggle: () => setState(() => confirmPasswordVisible = !confirmPasswordVisible),
                     ),
                     SizedBox(height: 30.h),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: _signup,
+                        onPressed: isLoading ? null : _signup,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Color(0xFFFFD100),
                           padding: EdgeInsets.symmetric(vertical: 16.h),
@@ -135,14 +197,16 @@ class _SignupScreenState extends State<SignupScreen> {
                             borderRadius: BorderRadius.circular(18.r),
                           ),
                         ),
-                        child: Text(
-                          "BUAT AKUN",
-                          style: GoogleFonts.poppins(
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue.shade900,
-                          ),
-                        ),
+                        child: isLoading
+                            ? CircularProgressIndicator(color: Colors.blue.shade900)
+                            : Text(
+                                "BUAT AKUN",
+                                style: GoogleFonts.poppins(
+                                  fontSize: 16.sp,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blue.shade900,
+                                ),
+                              ),
                       ),
                     ),
                     SizedBox(height: 20.h),

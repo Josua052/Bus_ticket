@@ -33,7 +33,12 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
   flutter_screenutil: ^5.8.4
-
+  intl: ^0.20.2
+  firebase_core: ^3.13.1
+  firebase_auth: ^5.5.4
+  cloud_firestore: ^5.6.8
+  image_picker: ^1.0.4
+  firebase_storage: ^12.4.6
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -61,9 +66,11 @@ flutter:
     - assets/icons/facebook.png
     - assets/icons/apple-logo.png
     - assets/icons/phone.png
+    - assets/icons/user.png
     - assets/images/not_file.png
     - assets/images/identitas_logo.png
     - assets/images/setir_mobil.png
+    - assets/images/penumpang_duduk.png
 
 
   # An image asset can refer to one or more resolution-specific "variants", see
